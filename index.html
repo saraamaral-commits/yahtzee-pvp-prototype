@@ -506,6 +506,41 @@ body {
   border: 2px solid #fff;
 }
 
+/* Feedback shown immediately before the automatic timeout zero is submitted. */
+.timeout-feedback {
+  position: absolute;
+  inset: 0;
+  z-index: 280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(11, 18, 48, 0.72);
+}
+.timeout-feedback[hidden] { display: none; }
+.timeout-feedback-box {
+  width: min(300px, 100%);
+  padding: 24px 20px 22px;
+  border: 3px solid rgba(255,255,255,0.95);
+  border-radius: 22px;
+  background: linear-gradient(180deg, #3a8dd4, #1e5fa0);
+  color: #fff;
+  text-align: center;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.48);
+}
+.timeout-feedback-title {
+  margin-bottom: 10px;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.timeout-feedback-message {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 /* Floating toast (section bonus / Yahtzee announcement) */
 .floating-toast {
   position: absolute;
@@ -1388,6 +1423,13 @@ body {
       </div>
     </div>
   </div><!-- Bonus-roll purchase flow -->
+  <div class="timeout-feedback" id="timeoutFeedback" hidden>
+    <div class="timeout-feedback-box" role="alertdialog" aria-live="assertive" aria-labelledby="timeoutFeedbackTitle" aria-describedby="timeoutFeedbackMessage">
+      <div class="timeout-feedback-title" id="timeoutFeedbackTitle">Turn missed</div>
+      <div class="timeout-feedback-message" id="timeoutFeedbackMessage">You missed your turn and used all the extra time</div>
+    </div>
+  </div>
+
   <div class="currency-popup" id="currencyPopup" hidden>
     <div class="currency-popup-box" role="dialog" aria-modal="true" aria-labelledby="currencyPopupTitle">
       <button type="button" class="bonus-shop-close" onclick="hideCurrencyPopup()" aria-label="Close">×</button>
@@ -2934,6 +2976,7 @@ function setCreatorPanelVisible(_visible) {
 }
 function openSettingsOverlay() {
   hideCurrencyPopup();
+  hideTimeoutFeedback();
   const el = document.getElementById('settingsOverlay');
   if (el) el.hidden = false;
 }
@@ -2943,6 +2986,7 @@ function closeSettingsOverlay() {
 }
 function openAdminOverlay() {
   hideCurrencyPopup();
+  hideTimeoutFeedback();
   const el = document.getElementById('adminOverlay');
   if (el) el.hidden = false;
 }
@@ -2992,13 +3036,51 @@ function stopTimer() {
   if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
 }
 
+let timeoutZeroPending = false;
+let timeoutZeroFeedbackTimer = null;
+
+function hideTimeoutFeedback() {
+  if (timeoutZeroFeedbackTimer) {
+    clearTimeout(timeoutZeroFeedbackTimer);
+    timeoutZeroFeedbackTimer = null;
+  }
+  timeoutZeroPending = false;
+  const feedback = document.getElementById('timeoutFeedback');
+  if (feedback) feedback.hidden = true;
+}
+
+function scheduleTimeoutZeroFeedback(submitterId, category) {
+  if (timeoutZeroPending) return;
+  timeoutZeroPending = true;
+  const feedback = document.getElementById('timeoutFeedback');
+  const isMyTimeout = submitterId === (myRole || 'p1');
+  if (isMyTimeout && feedback) feedback.hidden = false;
+  timeoutZeroFeedbackTimer = setTimeout(() => {
+    timeoutZeroFeedbackTimer = null;
+    if (feedback) feedback.hidden = true;
+    timeoutZeroPending = false;
+    autoSubmitTimeoutZero(true, submitterId, category);
+  }, 1500);
+}
+
 // Timeout zeroes the first available scorecard cell, scanning from the
 // top-left upper section down, then through the lower section and chance.
 function firstTimeoutCategory(scorecard) {
   return ALL_CATEGORIES.find(id => scorecard && scorecard[id] == null) || null;
 }
 
-function autoSubmitTimeoutZero() {
+function autoSubmitTimeoutZero(skipFeedback = false, expectedSubmitterId = null, expectedCategory = null) {
+  if (timeoutZeroPending && !skipFeedback) return;
+  if (!skipFeedback && !isSimul()) {
+    const timedOutId = state.currentTurn;
+    const timedOutPlayer = state.players[timedOutId];
+    const timedOutCategory = timedOutPlayer && firstTimeoutCategory(timedOutPlayer.scorecard);
+    if (timedOutPlayer && timedOutCategory && !timedOutPlayer.timeoutZeroUsed) {
+      scheduleTimeoutZeroFeedback(timedOutId, timedOutCategory);
+      return;
+    }
+  }
+
   if (isSimul()) {
     const timeoutLoser = ['p1', 'p2'].find(playerId => {
       const player = state.players[playerId];
@@ -3042,6 +3124,10 @@ function autoSubmitTimeoutZero() {
   if (!submitter || !category) {
     checkGameEnd();
     render();
+    return;
+  }
+  if (expectedSubmitterId && (expectedSubmitterId !== submitterId || expectedCategory !== category)) {
+    hideTimeoutFeedback();
     return;
   }
   if (submitter.timeoutZeroUsed) {
@@ -3181,6 +3267,7 @@ function backToLobby() {
   if (revealCommitTimer) { clearTimeout(revealCommitTimer); revealCommitTimer = null; }
   hideRevealOverlay();
   hideCurrencyPopup();
+  hideTimeoutFeedback();
   closeAdminOverlay();
   closeSettingsOverlay();
   stopTimer();
