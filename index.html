@@ -1302,7 +1302,7 @@ body {
 
   <!-- Lobby (PvP via localStorage) -->
   <div class="lobby" id="lobby">
-    <button type="button" class="admin-open-btn" onclick="(function(){var el=document.getElementById('settingsOverlay');if(el){el.removeAttribute('hidden');el.hidden=false;}})()">⚙ Admin</button>
+    <button type="button" class="admin-open-btn" onclick="openSettingsOverlay()">⚙ Admin</button>
     <h1>Yahtzee PvP</h1>
     <div class="lobby-name">
       <input id="myNameInput" placeholder="Your name" maxlength="20" autocomplete="off" oninput="onMyNameInput(this.value)" />
@@ -1353,7 +1353,7 @@ body {
       <div class="hud-avatar opp"></div>
     </div>
 
-    <div class="hud-menu" onclick="(function(){var el=document.getElementById('adminOverlay');if(el){el.removeAttribute('hidden');el.hidden=false;}})()"><span></span><span></span><span></span></div>
+    <div class="hud-menu" onclick="openAdminOverlay()"><span></span><span></span><span></span></div>
   </div>
 
   <div class="turn-timer-wrap">
@@ -2080,6 +2080,12 @@ function resetBonusPurchaseFlow() {
 }
 
 function openBonusRollOffers() {
+  const lobby = document.getElementById('lobby');
+  const settingsOverlay = document.getElementById('settingsOverlay');
+  const adminOverlay = document.getElementById('adminOverlay');
+  if ((lobby && !lobby.classList.contains('hidden'))
+      || (settingsOverlay && !settingsOverlay.hidden)
+      || (adminOverlay && !adminOverlay.hidden)) return;
   showCurrencyPopup();
 }
 
@@ -2927,6 +2933,7 @@ function setCreatorPanelVisible(_visible) {
   // No-op: admin/settings now live in modal overlays, toggled by explicit buttons.
 }
 function openSettingsOverlay() {
+  hideCurrencyPopup();
   const el = document.getElementById('settingsOverlay');
   if (el) el.hidden = false;
 }
@@ -2935,6 +2942,7 @@ function closeSettingsOverlay() {
   if (el) el.hidden = true;
 }
 function openAdminOverlay() {
+  hideCurrencyPopup();
   const el = document.getElementById('adminOverlay');
   if (el) el.hidden = false;
 }
@@ -3172,6 +3180,7 @@ function backToLobby() {
   if (gameOverAutoBack) { clearTimeout(gameOverAutoBack); gameOverAutoBack = null; }
   if (revealCommitTimer) { clearTimeout(revealCommitTimer); revealCommitTimer = null; }
   hideRevealOverlay();
+  hideCurrencyPopup();
   closeAdminOverlay();
   closeSettingsOverlay();
   stopTimer();
