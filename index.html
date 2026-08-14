@@ -334,8 +334,10 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  /* Keep the live turn timer and BR wallet visible above the offer dimmer. */
   position: relative;
+}
+/* Only lift the timer and wallet while the BR purchase offer is open. */
+.turn-timer-wrap.purchase-flow-active {
   z-index: 360;
 }
 .turn-timer {
@@ -2085,6 +2087,8 @@ function showCurrencyPopup(msg) {
   const popup = document.getElementById('currencyPopup');
   if (!popup) return;
   resetBonusPurchaseFlow();
+  const timerWrap = document.querySelector('.turn-timer-wrap');
+  if (timerWrap) timerWrap.classList.add('purchase-flow-active');
   const message = document.getElementById('currencyPopupText');
   if (message) message.textContent = msg ? `${msg} Get more to keep playing.` : 'Get more bonus rolls to keep playing.';
   popup.hidden = false;
@@ -2145,6 +2149,8 @@ function hideCurrencyPopup() {
   selectedBonusPack = null;
   const popup = document.getElementById('currencyPopup');
   if (popup) popup.hidden = true;
+  const timerWrap = document.querySelector('.turn-timer-wrap');
+  if (timerWrap) timerWrap.classList.remove('purchase-flow-active');
   setBonusPurchaseStage('shop');
 }
 
