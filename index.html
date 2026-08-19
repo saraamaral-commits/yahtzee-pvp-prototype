@@ -1610,13 +1610,13 @@ let state = {
   extraRollsUsed: 0,
   restartUsed: false,
   gameOver: null,
-  config: { cooldownSec: 30, initialBonusRolls: 10, hintsEnabled: false, extraRollLimit: 5, extraRollCost: 1, restartTurn: false },
+  config: { cooldownSec: 30, initialBonusRolls: 100, hintsEnabled: false, extraRollLimit: 5, extraRollCost: 1, restartTurn: false },
   // Match-level extra-time pool. It is initialized from the selected timer
   // duration and is consumed only while extra time is active.
   extraTimeRemainingMs: 30_000,
   players: {
-    p1: { scorecard: {}, bonusRolls: 20, freeUsed: false, timeoutZeroUsed: false },
-    p2: { scorecard: {}, bonusRolls: 20, freeUsed: false, timeoutZeroUsed: false }
+    p1: { scorecard: {}, bonusRolls: 100, freeUsed: false, timeoutZeroUsed: false },
+    p2: { scorecard: {}, bonusRolls: 100, freeUsed: false, timeoutZeroUsed: false }
   }
 };
 
@@ -2475,7 +2475,7 @@ function fbWait(cb) {
 // Local settings chosen in the creator panel. Applied when this tab creates a room.
 let creatorConfig = {
   cooldownSec: 30,
-  initialBonusRolls: 10,
+  initialBonusRolls: 100,
   gameMode: 'different',
   simulAnticipate: false,
   hintsEnabled: false,
@@ -2506,7 +2506,7 @@ function genCode() {
 }
 
 function freshState(config) {
-  const cfg = config || { cooldownSec: 30, initialBonusRolls: 10, gameMode: 'different', oppTurnMode: 'show', simulAnticipate: false, hintsEnabled: false, submitMode: 'play', extraRollLimit: 5, extraRollCost: 1, restartTurn: false };
+  const cfg = config || { cooldownSec: 30, initialBonusRolls: 100, gameMode: 'different', oppTurnMode: 'show', simulAnticipate: false, hintsEnabled: false, submitMode: 'play', extraRollLimit: 5, extraRollCost: 1, restartTurn: false };
   const simul = cfg.gameMode === 'simultaneous';
   const anticipate = cfg.gameMode === 'different' && cfg.oppTurnMode === 'anticipate';
   const perPlayerTurn = simul || anticipate;
@@ -2635,7 +2635,8 @@ function normalizeState(s) {
   if (s.extraRollsUsed == null) s.extraRollsUsed = 0;
   s.restartUsed = !!s.restartUsed;
   s.extraTime = !!s.extraTime;
-  if (s.config == null) s.config = { cooldownSec: 30, initialBonusRolls: 10, gameMode: 'different', oppTurnMode: 'show', simulAnticipate: false, hintsEnabled: false, submitMode: 'play', extraRollLimit: 5, extraRollCost: 1, restartTurn: false };
+  if (s.config == null) s.config = { cooldownSec: 30, initialBonusRolls: 100, gameMode: 'different', oppTurnMode: 'show', simulAnticipate: false, hintsEnabled: false, submitMode: 'play', extraRollLimit: 5, extraRollCost: 1, restartTurn: false };
+  if (s.config.initialBonusRolls == null) s.config.initialBonusRolls = 100;
   // Turn-by-turn is the only supported game mode.
   s.config.gameMode = 'different';
   // Extra time is always enabled; only its duration is configurable.
@@ -3442,8 +3443,9 @@ window.addEventListener('DOMContentLoaded', () => {
         <h3>Bonus rolls</h3>
         <div class="creator-btn-row" data-group="initialBonusRolls">
           <button type="button" class="creator-btn" data-value="0" onclick="setCreatorConfig('initialBonusRolls', 0)">0 BR</button>
-          <button type="button" class="creator-btn active" data-value="10" onclick="setCreatorConfig('initialBonusRolls', 10)">10 BR</button>
+          <button type="button" class="creator-btn" data-value="10" onclick="setCreatorConfig('initialBonusRolls', 10)">10 BR</button>
           <button type="button" class="creator-btn" data-value="20" onclick="setCreatorConfig('initialBonusRolls', 20)">20 BR</button>
+          <button type="button" class="creator-btn active" data-value="100" onclick="setCreatorConfig('initialBonusRolls', 100)">100 BR</button>
         </div>
       </div>
       <button type="button" class="admin-overlay-close" onclick="closeSettingsOverlay()">Close</button>
