@@ -1923,11 +1923,11 @@ function maxExtraRolls() {
   return EXTRA_ROLL_LIMIT_OPTIONS.includes(limit) ? limit : 3;
 }
 // Cost in BR for each PAID extra roll. Preserve the existing rule: the first
-// two paid extras cost 1 BR, and the third extra uses the configured 1/2 BR.
+// two paid extras cost 1 BR, and the third extra uses the configured 1/2/4 BR.
 function extraRollCostAt(idx) {
   if (idx === 2) {
-    const c = state.config && state.config.extraRollCost;
-    return (c === 2) ? 2 : 1;
+    const c = Number(state.config && state.config.extraRollCost);
+    return (c === 2 || c === 4) ? c : 1;
   }
   return 1;
 }
@@ -2042,7 +2042,7 @@ function onRollClick() {
   if (turnState().rollsLeft > 0) { rollDice(); return; }
 
   // Extra rolls phase. The first extra roll remains free once per game;
-  // subsequent extras use the configured 1/2 BR cost rule.
+  // subsequent extras use the configured 1/2/4 BR cost rule.
   if ((turnState().extraRollsUsed || 0) < maxExtraRolls()) {
     if (!me.freeUsed) {
       // First extra roll of the whole game: free
@@ -3430,6 +3430,7 @@ window.addEventListener('DOMContentLoaded', () => {
         <div class="creator-btn-row" data-group="extraRollCost">
           <button type="button" class="creator-btn active" data-value="1" onclick="setCreatorConfig('extraRollCost', 1)">1 BR</button>
           <button type="button" class="creator-btn" data-value="2" onclick="setCreatorConfig('extraRollCost', 2)">2 BR</button>
+          <button type="button" class="creator-btn" data-value="4" onclick="setCreatorConfig('extraRollCost', 4)">4 BR</button>
         </div>
       </div>
       <div class="creator-panel-group">
