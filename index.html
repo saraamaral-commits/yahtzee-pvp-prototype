@@ -144,6 +144,29 @@ body {
 }
 .creator-btn-row-col { flex-direction: column; }
 .creator-btn-row-col .creator-btn { width: 100%; }
+.creator-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #fff;
+  font-weight: 800;
+}
+.creator-field span { flex: 1; }
+.creator-number-input {
+  width: 120px;
+  box-sizing: border-box;
+  padding: 9px 10px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-radius: 10px;
+  background: rgba(0,0,0,0.3);
+  color: #fff;
+  font: inherit;
+  text-align: right;
+}
+.creator-number-input:focus {
+  outline: 2px solid #FFD34D;
+  outline-offset: 1px;
+}
 .creator-btn {
   background: rgba(0,0,0,0.3);
   border: 2px solid rgba(255,255,255,0.2);
@@ -2499,6 +2522,16 @@ function setCreatorConfig(key, value) {
     if (submitModeGroup) submitModeGroup.hidden = !value;
   }
 }
+function setCreatorBonusRolls(value) {
+  creatorConfig.initialBonusRolls = value === ''
+    ? 0
+    : Math.max(0, Math.floor(Number(value) || 0));
+}
+function normalizeCreatorBonusRolls(input) {
+  const amount = Math.max(0, Math.floor(Number(input.value) || 0));
+  input.value = amount;
+  creatorConfig.initialBonusRolls = amount;
+}
 
 function genCode() {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -3442,13 +3475,21 @@ window.addEventListener('DOMContentLoaded', () => {
       </div>
       <div class="creator-panel-group">
         <h3>Bonus rolls</h3>
-        <div class="creator-btn-row" data-group="initialBonusRolls">
-          <button type="button" class="creator-btn" data-value="0" onclick="setCreatorConfig('initialBonusRolls', 0)">0 BR</button>
-          <button type="button" class="creator-btn" data-value="10" onclick="setCreatorConfig('initialBonusRolls', 10)">10 BR</button>
-          <button type="button" class="creator-btn" data-value="20" onclick="setCreatorConfig('initialBonusRolls', 20)">20 BR</button>
-          <button type="button" class="creator-btn active" data-value="100" onclick="setCreatorConfig('initialBonusRolls', 100)">100 BR</button>
-          <button type="button" class="creator-btn" data-value="200" onclick="setCreatorConfig('initialBonusRolls', 200)">200 BR</button>
-        </div>
+        <label class="creator-field" for="initialBonusRollsInput">
+          <span>Starting BR balance</span>
+          <input
+            id="initialBonusRollsInput"
+            class="creator-number-input"
+            type="number"
+            min="0"
+            step="1"
+            value="100"
+            inputmode="numeric"
+            aria-label="Starting bonus rolls"
+            oninput="setCreatorBonusRolls(this.value)"
+            onblur="normalizeCreatorBonusRolls(this)"
+          >
+        </label>
       </div>
       <button type="button" class="admin-overlay-close" onclick="closeSettingsOverlay()">Close</button>
     </div>
