@@ -1935,8 +1935,8 @@ function pipPattern(n) {
 // Returns the roll-button state for the current viewer:
 //   { kind: 'first'|'used1'|'used2'|'free'|'paid'|'restart'|'none', img: src|null }
 // Max number of extra rolls allowed per turn. New rooms can choose 3, 4, 5, 10,
-// or 20. Legacy rooms without the setting retain the old cap of 2.
-const EXTRA_ROLL_LIMIT_OPTIONS = [3, 4, 5, 10, 20];
+// The creator panel offers 2, 3, 4, 5, or 20 extra rolls per turn.
+const EXTRA_ROLL_LIMIT_OPTIONS = [2, 3, 4, 5, 20];
 function maxExtraRolls() {
   const configured = state.config && state.config.extraRollLimit;
   // Support rooms created before this setting became numeric.
@@ -3452,10 +3452,10 @@ window.addEventListener('DOMContentLoaded', () => {
       <div class="creator-panel-group">
         <h3>Extra rolls per turn</h3>
         <div class="creator-btn-row" data-group="extraRollLimit">
+          <button type="button" class="creator-btn" data-value="2" onclick="setCreatorConfig('extraRollLimit', 2)">2 extra</button>
           <button type="button" class="creator-btn" data-value="3" onclick="setCreatorConfig('extraRollLimit', 3)">3 extra</button>
           <button type="button" class="creator-btn" data-value="4" onclick="setCreatorConfig('extraRollLimit', 4)">4 extra</button>
           <button type="button" class="creator-btn active" data-value="5" onclick="setCreatorConfig('extraRollLimit', 5)">5 extra</button>
-          <button type="button" class="creator-btn" data-value="10" onclick="setCreatorConfig('extraRollLimit', 10)">10 extra</button>
           <button type="button" class="creator-btn" data-value="20" onclick="setCreatorConfig('extraRollLimit', 20)">20 extra</button>
         </div>
       </div>
