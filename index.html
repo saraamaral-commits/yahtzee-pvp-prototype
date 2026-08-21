@@ -1633,13 +1633,13 @@ let state = {
   extraRollsUsed: 0,
   restartUsed: false,
   gameOver: null,
-  config: { cooldownSec: 30, initialBonusRolls: 100, hintsEnabled: false, extraRollLimit: 5, extraRollCost: 1, restartTurn: false },
+  config: { cooldownSec: 30, initialBonusRolls: 100, hintsEnabled: false, extraRollLimit: 5, extraRollCost: 1, restartTurn: false, brCapPerGame: 65 },
   // Match-level extra-time pool. It is initialized from the selected timer
   // duration and is consumed only while extra time is active.
   extraTimeRemainingMs: 30_000,
   players: {
-    p1: { scorecard: {}, bonusRolls: 100, freeUsed: false, timeoutZeroUsed: false },
-    p2: { scorecard: {}, bonusRolls: 100, freeUsed: false, timeoutZeroUsed: false }
+    p1: { scorecard: {}, bonusRolls: 100, bonusRollsSpent: 0, freeUsed: false, timeoutZeroUsed: false },
+    p2: { scorecard: {}, bonusRolls: 100, bonusRollsSpent: 0, freeUsed: false, timeoutZeroUsed: false }
   }
 };
 
@@ -1934,9 +1934,10 @@ function pipPattern(n) {
 
 // Returns the roll-button state for the current viewer:
 //   { kind: 'first'|'used1'|'used2'|'free'|'paid'|'restart'|'none', img: src|null }
-// Max number of extra rolls allowed per turn. New rooms can choose 3, 4, 5, 10,
-// The creator panel offers 2, 3, 4, 5, or 20 extra rolls per turn.
+// Max number of extra rolls allowed per turn. The creator panel offers 2, 3, 4,
+// 5, or 20 extra rolls per turn.
 const EXTRA_ROLL_LIMIT_OPTIONS = [2, 3, 4, 5, 20];
+const BR_CAP_OPTIONS = [26, 39, 65];
 function maxExtraRolls() {
   const configured = state.config && state.config.extraRollLimit;
   // Support rooms created before this setting became numeric.
@@ -1953,6 +1954,29 @@ function extraRollCostAt(idx) {
     return c === 2 ? 2 : 1;
   }
   return 1;
+}
+
+function bonusRollCap() {
+  const configured = Number(state.config && state.config.brCapPerGame);
+  return BR_CAP_OPTIONS.includes(configured) ? configured : 65;
+}
+
+function bonusRollsSpent(player) {
+  return Math.max(0, Math.floor(Number(player && player.bonusRollsSpent) || 0));
+}
+
+function hasMatchBonusRollCapacity(player, amount) {
+  const cost = Math.max(0, Math.floor(Number(amount) || 0));
+  return bonusRollsSpent(player) + cost <= bonusRollCap();
+}
+
+function spendBonusRolls(player, amount) {
+  const cost = Math.max(0, Math.floor(Number(amount) || 0));
+  if (!player || cost <= 0 || (Number(player.bonusRolls) || 0) < cost
+      || !hasMatchBonusRollCapacity(player, cost)) return false;
+  player.bonusRolls = (Number(player.bonusRolls) || 0) - cost;
+  player.bonusRollsSpent = bonusRollsSpent(player) + cost;
+  return true;
 }
 
 // Restarting is configurable for new rooms. Older rooms default to keeping
@@ -2077,11 +2101,15 @@ function onRollClick() {
     }
     const used = turnState().extraRollsUsed || 0;
     const cost = extraRollCostAt(used);
+    if (!hasMatchBonusRollCapacity(me, cost)) {
+      showFloatingToast('BR CAP REACHED', `${bonusRollCap()} BR game limit`);
+      return;
+    }
     if ((me.bonusRolls || 0) < cost) {
       showCurrencyPopup("You don't have enough bonus rolls.");
       return;
     }
-    me.bonusRolls -= cost;
+    if (!spendBonusRolls(me, cost)) return;
     turnState().extraRollsUsed = used + 1;
     turnState().rollsLeft = 1;
     rollDice();
@@ -2090,11 +2118,15 @@ function onRollClick() {
 
   // Restart turn (once per turn)
   if (restartTurnEnabled() && !turnState().restartUsed) {
+    if (!hasMatchBonusRollCapacity(me, 5)) {
+      showFloatingToast('BR CAP REACHED', `${bonusRollCap()} BR game limit`);
+      return;
+    }
     if ((me.bonusRolls || 0) < 5) {
       showCurrencyPopup("Not enough bonus rolls to restart the turn.");
       return;
     }
-    me.bonusRolls -= 5;
+    if (!spendBonusRolls(me, 5)) return;
     turnState().extraRollsUsed = 0;
     turnState().restartUsed = true;
     turnState().rollsLeft = 3;
@@ -2506,6 +2538,7 @@ let creatorConfig = {
   extraRollLimit: 5,
   extraRollCost: 1,
   restartTurn: false,
+  brCapPerGame: 65,
 };
 function setCreatorConfig(key, value) {
   creatorConfig[key] = value;
@@ -2539,7 +2572,7 @@ function genCode() {
 }
 
 function freshState(config) {
-  const cfg = config || { cooldownSec: 30, initialBonusRolls: 100, gameMode: 'different', oppTurnMode: 'show', simulAnticipate: false, hintsEnabled: false, submitMode: 'play', extraRollLimit: 5, extraRollCost: 1, restartTurn: false };
+  const cfg = config || { cooldownSec: 30, initialBonusRolls: 100, gameMode: 'different', oppTurnMode: 'show', simulAnticipate: false, hintsEnabled: false, submitMode: 'play', extraRollLimit: 5, extraRollCost: 1, restartTurn: false, brCapPerGame: 65 };
   const simul = cfg.gameMode === 'simultaneous';
   const anticipate = cfg.gameMode === 'different' && cfg.oppTurnMode === 'anticipate';
   const perPlayerTurn = simul || anticipate;
@@ -2558,9 +2591,9 @@ function freshState(config) {
     gameOver: null,
     config: { ...cfg },
     players: {
-      p1: { scorecard: {}, bonusRolls: cfg.initialBonusRolls, freeUsed: false, timeoutZeroUsed: false,
+      p1: { scorecard: {}, bonusRolls: cfg.initialBonusRolls, bonusRollsSpent: 0, freeUsed: false, timeoutZeroUsed: false,
             turn: perPlayerTurn ? makeTurnState() : null, pendingSubmit: null },
-      p2: { scorecard: {}, bonusRolls: cfg.initialBonusRolls, freeUsed: false, timeoutZeroUsed: false,
+      p2: { scorecard: {}, bonusRolls: cfg.initialBonusRolls, bonusRollsSpent: 0, freeUsed: false, timeoutZeroUsed: false,
             turn: perPlayerTurn ? makeTurnState() : null, pendingSubmit: null }
     }
   };
@@ -2647,6 +2680,7 @@ function normalizeState(s) {
     const p = s.players[role] || (s.players[role] = {});
     p.scorecard = p.scorecard || {};
     if (p.bonusRolls == null) p.bonusRolls = 20;
+    p.bonusRollsSpent = Math.max(0, Math.floor(Number(p.bonusRollsSpent) || 0));
     p.freeUsed = !!p.freeUsed;
     p.timeoutZeroUsed = !!p.timeoutZeroUsed;
     if (p.pendingSubmit === undefined) p.pendingSubmit = null;
@@ -2668,8 +2702,10 @@ function normalizeState(s) {
   if (s.extraRollsUsed == null) s.extraRollsUsed = 0;
   s.restartUsed = !!s.restartUsed;
   s.extraTime = !!s.extraTime;
-  if (s.config == null) s.config = { cooldownSec: 30, initialBonusRolls: 100, gameMode: 'different', oppTurnMode: 'show', simulAnticipate: false, hintsEnabled: false, submitMode: 'play', extraRollLimit: 5, extraRollCost: 1, restartTurn: false };
+  if (s.config == null) s.config = { cooldownSec: 30, initialBonusRolls: 100, gameMode: 'different', oppTurnMode: 'show', simulAnticipate: false, hintsEnabled: false, submitMode: 'play', extraRollLimit: 5, extraRollCost: 1, restartTurn: false, brCapPerGame: 65 };
   if (s.config.initialBonusRolls == null) s.config.initialBonusRolls = 100;
+  if (s.config.brCapPerGame == null) s.config.brCapPerGame = 65;
+  if (!BR_CAP_OPTIONS.includes(Number(s.config.brCapPerGame))) s.config.brCapPerGame = 65;
   // Turn-by-turn is the only supported game mode.
   s.config.gameMode = 'different';
   // Extra time is always enabled; only its duration is configurable.
@@ -3490,6 +3526,14 @@ window.addEventListener('DOMContentLoaded', () => {
             onblur="normalizeCreatorBonusRolls(this)"
           >
         </label>
+      </div>
+      <div class="creator-panel-group">
+        <h3>BR cap per game</h3>
+        <div class="creator-btn-row" data-group="brCapPerGame">
+          <button type="button" class="creator-btn" data-value="26" onclick="setCreatorConfig('brCapPerGame', 26)">26 BR</button>
+          <button type="button" class="creator-btn" data-value="39" onclick="setCreatorConfig('brCapPerGame', 39)">39 BR</button>
+          <button type="button" class="creator-btn active" data-value="65" onclick="setCreatorConfig('brCapPerGame', 65)">65 BR</button>
+        </div>
       </div>
       <button type="button" class="admin-overlay-close" onclick="closeSettingsOverlay()">Close</button>
     </div>
