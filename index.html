@@ -1633,7 +1633,7 @@ let state = {
   extraRollsUsed: 0,
   restartUsed: false,
   gameOver: null,
-  config: { cooldownSec: 30, initialBonusRolls: 100, hintsEnabled: false, extraRollLimit: 5, extraRollCost: 1, restartTurn: false, brCapPerGame: 65 },
+  config: { cooldownSec: 30, initialBonusRolls: 100, hintsEnabled: false, extraRollLimit: 2, extraRollCost: 1, restartTurn: false, brCapPerGame: 'none' },
   // Match-level extra-time pool. It is initialized from the selected timer
   // duration and is consumed only while extra time is active.
   extraTimeRemainingMs: 30_000,
@@ -1944,7 +1944,7 @@ function maxExtraRolls() {
   if (configured === true) return 3;
   if (configured === false || configured == null) return 2;
   const limit = Number(configured);
-  return EXTRA_ROLL_LIMIT_OPTIONS.includes(limit) ? limit : 3;
+  return EXTRA_ROLL_LIMIT_OPTIONS.includes(limit) ? limit : 2;
 }
 // Cost in BR for each PAID extra roll. Preserve the existing rule: the first
 // two paid extras cost 1 BR, and the third extra uses the configured 1/2 BR.
@@ -1960,7 +1960,7 @@ function bonusRollCap() {
   const configuredValue = state.config && state.config.brCapPerGame;
   if (configuredValue === 'none') return Infinity;
   const configured = Number(configuredValue);
-  return BR_CAP_OPTIONS.includes(configured) ? configured : 65;
+  return BR_CAP_OPTIONS.includes(configured) ? configured : Infinity;
 }
 
 function bonusRollsSpent(player) {
@@ -2537,10 +2537,10 @@ let creatorConfig = {
   simulAnticipate: false,
   hintsEnabled: false,
   submitMode: 'play',
-  extraRollLimit: 5,
+  extraRollLimit: 2,
   extraRollCost: 1,
   restartTurn: false,
-  brCapPerGame: 65,
+  brCapPerGame: 'none',
 };
 function setCreatorConfig(key, value) {
   creatorConfig[key] = value;
@@ -2574,7 +2574,7 @@ function genCode() {
 }
 
 function freshState(config) {
-  const cfg = config || { cooldownSec: 30, initialBonusRolls: 100, gameMode: 'different', oppTurnMode: 'show', simulAnticipate: false, hintsEnabled: false, submitMode: 'play', extraRollLimit: 5, extraRollCost: 1, restartTurn: false, brCapPerGame: 65 };
+  const cfg = config || { cooldownSec: 30, initialBonusRolls: 100, gameMode: 'different', oppTurnMode: 'show', simulAnticipate: false, hintsEnabled: false, submitMode: 'play', extraRollLimit: 2, extraRollCost: 1, restartTurn: false, brCapPerGame: 'none' };
   const simul = cfg.gameMode === 'simultaneous';
   const anticipate = cfg.gameMode === 'different' && cfg.oppTurnMode === 'anticipate';
   const perPlayerTurn = simul || anticipate;
@@ -2704,11 +2704,11 @@ function normalizeState(s) {
   if (s.extraRollsUsed == null) s.extraRollsUsed = 0;
   s.restartUsed = !!s.restartUsed;
   s.extraTime = !!s.extraTime;
-  if (s.config == null) s.config = { cooldownSec: 30, initialBonusRolls: 100, gameMode: 'different', oppTurnMode: 'show', simulAnticipate: false, hintsEnabled: false, submitMode: 'play', extraRollLimit: 5, extraRollCost: 1, restartTurn: false, brCapPerGame: 65 };
+  if (s.config == null) s.config = { cooldownSec: 30, initialBonusRolls: 100, gameMode: 'different', oppTurnMode: 'show', simulAnticipate: false, hintsEnabled: false, submitMode: 'play', extraRollLimit: 2, extraRollCost: 1, restartTurn: false, brCapPerGame: 'none' };
   if (s.config.initialBonusRolls == null) s.config.initialBonusRolls = 100;
-  if (s.config.brCapPerGame == null) s.config.brCapPerGame = 65;
+  if (s.config.brCapPerGame == null) s.config.brCapPerGame = 'none';
   if (s.config.brCapPerGame !== 'none'
-      && !BR_CAP_OPTIONS.includes(Number(s.config.brCapPerGame))) s.config.brCapPerGame = 65;
+      && !BR_CAP_OPTIONS.includes(Number(s.config.brCapPerGame))) s.config.brCapPerGame = 'none';
   // Turn-by-turn is the only supported game mode.
   s.config.gameMode = 'different';
   // Extra time is always enabled; only its duration is configurable.
@@ -3491,10 +3491,10 @@ window.addEventListener('DOMContentLoaded', () => {
       <div class="creator-panel-group">
         <h3>Extra rolls per turn</h3>
         <div class="creator-btn-row" data-group="extraRollLimit">
-          <button type="button" class="creator-btn" data-value="2" onclick="setCreatorConfig('extraRollLimit', 2)">2 extra</button>
+          <button type="button" class="creator-btn active" data-value="2" onclick="setCreatorConfig('extraRollLimit', 2)">2 extra</button>
           <button type="button" class="creator-btn" data-value="3" onclick="setCreatorConfig('extraRollLimit', 3)">3 extra</button>
           <button type="button" class="creator-btn" data-value="4" onclick="setCreatorConfig('extraRollLimit', 4)">4 extra</button>
-          <button type="button" class="creator-btn active" data-value="5" onclick="setCreatorConfig('extraRollLimit', 5)">5 extra</button>
+          <button type="button" class="creator-btn" data-value="5" onclick="setCreatorConfig('extraRollLimit', 5)">5 extra</button>
           <button type="button" class="creator-btn" data-value="20" onclick="setCreatorConfig('extraRollLimit', 20)">20 extra</button>
         </div>
       </div>
@@ -3535,8 +3535,8 @@ window.addEventListener('DOMContentLoaded', () => {
         <div class="creator-btn-row" data-group="brCapPerGame">
           <button type="button" class="creator-btn" data-value="26" onclick="setCreatorConfig('brCapPerGame', 26)">26 BR</button>
           <button type="button" class="creator-btn" data-value="39" onclick="setCreatorConfig('brCapPerGame', 39)">39 BR</button>
-          <button type="button" class="creator-btn active" data-value="65" onclick="setCreatorConfig('brCapPerGame', 65)">65 BR</button>
-          <button type="button" class="creator-btn" data-value="none" onclick="setCreatorConfig('brCapPerGame', 'none')">No cap</button>
+          <button type="button" class="creator-btn" data-value="65" onclick="setCreatorConfig('brCapPerGame', 65)">65 BR</button>
+          <button type="button" class="creator-btn active" data-value="none" onclick="setCreatorConfig('brCapPerGame', 'none')">No cap</button>
         </div>
       </div>
       <button type="button" class="admin-overlay-close" onclick="closeSettingsOverlay()">Close</button>
