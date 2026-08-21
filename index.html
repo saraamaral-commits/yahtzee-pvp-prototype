@@ -1957,7 +1957,9 @@ function extraRollCostAt(idx) {
 }
 
 function bonusRollCap() {
-  const configured = Number(state.config && state.config.brCapPerGame);
+  const configuredValue = state.config && state.config.brCapPerGame;
+  if (configuredValue === 'none') return Infinity;
+  const configured = Number(configuredValue);
   return BR_CAP_OPTIONS.includes(configured) ? configured : 65;
 }
 
@@ -2705,7 +2707,8 @@ function normalizeState(s) {
   if (s.config == null) s.config = { cooldownSec: 30, initialBonusRolls: 100, gameMode: 'different', oppTurnMode: 'show', simulAnticipate: false, hintsEnabled: false, submitMode: 'play', extraRollLimit: 5, extraRollCost: 1, restartTurn: false, brCapPerGame: 65 };
   if (s.config.initialBonusRolls == null) s.config.initialBonusRolls = 100;
   if (s.config.brCapPerGame == null) s.config.brCapPerGame = 65;
-  if (!BR_CAP_OPTIONS.includes(Number(s.config.brCapPerGame))) s.config.brCapPerGame = 65;
+  if (s.config.brCapPerGame !== 'none'
+      && !BR_CAP_OPTIONS.includes(Number(s.config.brCapPerGame))) s.config.brCapPerGame = 65;
   // Turn-by-turn is the only supported game mode.
   s.config.gameMode = 'different';
   // Extra time is always enabled; only its duration is configurable.
@@ -3533,6 +3536,7 @@ window.addEventListener('DOMContentLoaded', () => {
           <button type="button" class="creator-btn" data-value="26" onclick="setCreatorConfig('brCapPerGame', 26)">26 BR</button>
           <button type="button" class="creator-btn" data-value="39" onclick="setCreatorConfig('brCapPerGame', 39)">39 BR</button>
           <button type="button" class="creator-btn active" data-value="65" onclick="setCreatorConfig('brCapPerGame', 65)">65 BR</button>
+          <button type="button" class="creator-btn" data-value="none" onclick="setCreatorConfig('brCapPerGame', 'none')">No cap</button>
         </div>
       </div>
       <button type="button" class="admin-overlay-close" onclick="closeSettingsOverlay()">Close</button>
